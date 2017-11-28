@@ -18,7 +18,7 @@ import "phoenix_html"
 // Local files can be imported directly using relative
 // paths "./socket" or full ones "web/static/js/socket".
 
-// import socket from "./socket"
+import channel from "./socket"
 
 const MAP_WIDTH = 500;
 const MAP_HEIGHT = 500;
@@ -163,11 +163,8 @@ function render(ctx, state) {
 }
 
 function initWorld(){
-  for (let i = 0; i < 100; i++) {
-    let x = Math.round(Math.random() * 300) - 150;
-    let y = Math.round(Math.random() * 300) - 150;
-    state.coins.push({x: x, y: y});
-  }
+  channel.push("coins")
+    .receive("ok", (msg) => { state.coins = msg.coins })
 }
 
 function checkCollisions(){

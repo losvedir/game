@@ -14,6 +14,7 @@ defmodule Game.Application do
       supervisor(GameWeb.Endpoint, []),
       # Start your own worker by calling: Game.Worker.start_link(arg1, arg2, arg3)
       # worker(Game.Worker, [arg1, arg2, arg3]),
+      worker(Game.World, []),
     ]
 
     # See https://hexdocs.pm/elixir/Supervisor.html
