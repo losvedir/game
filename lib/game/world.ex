@@ -20,8 +20,8 @@ defmodule Game.World do
 
   defp random_pos do
     %{
-      x: (:random.uniform(300) - 150),
-      y: (:random.uniform(300) - 150),
+      x: (:rand.uniform(300) - 150),
+      y: (:rand.uniform(300) - 150),
     }
   end
 end

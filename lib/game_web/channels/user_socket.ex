@@ -3,6 +3,7 @@ defmodule GameWeb.UserSocket do
 
   ## Channels
   # channel "room:*", GameWeb.RoomChannel
+  channel "world", GameWeb.WorldChannel
 
   ## Transports
   transport :websocket, Phoenix.Transports.WebSocket
