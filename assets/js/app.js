@@ -36,31 +36,31 @@ let movePlayer = (x, y) => {
 }
 
 // NOTE: Y plane is inverted on purpose
-let moveUpLeft    = () => movePlayer(state.player.x - 1, state.player.y - 1);
-let moveUp        = () => movePlayer(state.player.x + 0, state.player.y - 1);
-let moveUpRight   = () => movePlayer(state.player.x + 1, state.player.y - 1);
+let moveUpLeft    = () => movePlayer(state.player.x - 1, state.player.y + 1);
+let moveUp        = () => movePlayer(state.player.x + 0, state.player.y + 1);
+let moveUpRight   = () => movePlayer(state.player.x + 1, state.player.y + 1);
 let moveLeft      = () => movePlayer(state.player.x - 1, state.player.y + 0);
 let moveRight     = () => movePlayer(state.player.x + 1, state.player.y + 0);
-let moveDownLeft  = () => movePlayer(state.player.x - 1, state.player.y + 1);
-let moveDown      = () => movePlayer(state.player.x + 0, state.player.y + 1);
-let moveDownRight = () => movePlayer(state.player.x + 1, state.player.y + 1);
+let moveDownLeft  = () => movePlayer(state.player.x - 1, state.player.y - 1);
+let moveDown      = () => movePlayer(state.player.x + 0, state.player.y - 1);
+let moveDownRight = () => movePlayer(state.player.x + 1, state.player.y - 1);
 
-let calculateDirection = (xDiff, yDiff) => {
-  if (xDiff > 0 && yDiff > 0) {
+let calculateDirection = (pos1, pos2) => {
+  if (pos1.x > pos2.x && pos1.y < pos2.y) {
     return "UpLeft";
-  } else if (xDiff === 0 && yDiff > 0) {
+  } else if (pos1.x === pos2.x && pos1.y < pos2.y) {
     return "Up";
-  } else if (xDiff < 0 && yDiff > 0) {
+  } else if (pos1.x < pos2.x && pos1.y < pos2.y) {
     return "UpRight";
-  } else if (xDiff > 0 && yDiff === 0) {
+  } else if (pos1.x > pos2.x && pos1.y === pos2.y) {
     return "Left";
-  } else if (xDiff < 0 && yDiff === 0) {
+  } else if (pos1.x < pos2.x && pos1.y === pos2.y) {
     return "Right";
-  } else if (xDiff > 0 && yDiff < 0) {
+  } else if (pos1.x > pos2.x && pos1.y > pos2.y) {
     return "DownLeft";
-  } else if (xDiff === 0 && yDiff < 0) {
+  } else if (pos1.x === pos2.x && pos1.y > pos2.y) {
     return "Down";
-  } else if (xDiff < 0 && yDiff < 0) {
+  } else if (pos1.x < pos2.x && pos1.y > pos2.y) {
     return "DownRight";
   }
 }
@@ -77,10 +77,8 @@ let moves = {
   "DownLeft": moveDownLeft,
   "ArrowDown": moveDown,
   "Down": moveDown,
-  "DownRight": moveDownRight
+  "DownRight": moveDownRight,
 };
-
-let movePlayerToMove = move => moves[calculateDirection(OFF_X - move.x, OFF_Y - move.y)]();
 
 ////////////////////////////////////////////////////
 // STATE
@@ -88,27 +86,28 @@ let movePlayerToMove = move => moves[calculateDirection(OFF_X - move.x, OFF_Y - 
 
 let state = {
   coins: [],
-  move: {x: 0, y: 0},
+  click: {x: null, y: null},
   player: {x: 0, y: 0, coins: 0}
 };
 
 let canvas = document.getElementById('canvas');
 let ctx = canvas.getContext('2d');
 
-function drawCoin(ctx, x, y){
+function drawCoin(ctx, pos){
+  let {x, y} = logicToPx(pos)
   ctx.beginPath();
   ctx.fillStyle = "#FFFF00";
   ctx.arc(x, y, 2, 0, 2 * Math.PI);
   ctx.fill();
 }
 
-function drawPerson(ctx, x, y){
+function drawPerson(ctx){
   ctx.beginPath();
   ctx.fillStyle = "black";
-  ctx.moveTo(x - 3, y - 3);
-  ctx.lineTo(x + 3, y - 3);
-  ctx.lineTo(x + 3, y + 3);
-  ctx.lineTo(x - 3, y + 3);
+  ctx.moveTo(OFF_X - 3, OFF_Y - 3);
+  ctx.lineTo(OFF_X + 3, OFF_Y - 3);
+  ctx.lineTo(OFF_X + 3, OFF_Y + 3);
+  ctx.lineTo(OFF_X - 3, OFF_Y + 3);
   ctx.closePath();
   ctx.stroke();
 }
@@ -116,24 +115,44 @@ function drawPerson(ctx, x, y){
 function drawStats(coins, ctx, x, y){
   ctx.beginPath();
   ctx.fillStyle = "black";
+
   ctx.fillText(`$: ${coins}`, x, y);
+  ctx.fillText(`click.x: ${state.click.x}, click.y: ${state.click.y}`, x, y - 15);
+  ctx.fillText(`player.x: ${state.player.x}, player.y: ${state.player.y}`, x, y - 30);
 }
 
-let drawMoveDestination = (ctx, x, y) => {
-  if (!x || !y) {
+let drawMoveDestination = (ctx, pos) => {
+  if (!pos.x || !pos.y) {
     return false;
   }
+
+  let {x, y} = logicToPx(pos);
 
   ctx.beginPath();
   ctx.fillStyle = "#ff000";
 
-  ctx.moveTo(x - 8, y - 8);
-  ctx.lineTo(x + 8, y + 8);
+  ctx.moveTo(x - 5, y - 5);
+  ctx.lineTo(x + 5, y + 5);
   ctx.stroke();
 
-  ctx.moveTo(x + 8, y - 8);
-  ctx.lineTo(x - 8, y + 8);
+  ctx.moveTo(x + 5, y - 5);
+  ctx.lineTo(x - 5, y + 5);
   ctx.stroke();
+}
+
+function moveToClick() {
+  if (state.click.x && state.click.y) {
+    if (state.click.x === state.player.x && state.click.y === state.player.y) {
+      state.click = {x: null, y: null};
+    } else {
+      moves[calculateDirection(state.player, state.click)]();
+    }
+  }
+}
+
+function physics(state) {
+  checkCoinCollisions();
+  moveToClick();
 }
 
 function render(ctx, state) {
@@ -143,22 +162,32 @@ function render(ctx, state) {
   ctx.fillStyle = "#00CC00";
   ctx.fillRect(0, 0, MAP_WIDTH, MAP_HEIGHT);
 
-  if (state.move.x > 0 && (OFF_X !== state.move.x || OFF_Y !== state.move.y)) {
-    movePlayerToMove(state.move);
-  }
-
-  drawPerson(ctx, OFF_X, OFF_Y);
+  drawPerson(ctx);
 
   state.coins.forEach(coin => {
     if (Math.abs(coin.x - state.player.x) <= 50 && Math.abs(coin.y - state.player.y) <= 50) {
-      drawCoin(ctx, (coin.x - state.player.x) * SCALE + OFF_X, (coin.y - state.player.y) * SCALE + OFF_Y);
+      drawCoin(ctx, coin);
     }
   });
 
   drawStats(state.player.coins, ctx, 0, MAP_HEIGHT);
 
-  if (state.move.x > 0) {
-    drawMoveDestination(ctx, (state.move.x - state.player.x) * SCALE + OFF_X, (state.move.y - state.player.y) * SCALE + OFF_Y);
+  if (state.click.x) {
+    drawMoveDestination(ctx, state.click);
+  }
+}
+
+function pxToLogic({x, y}) {
+  return {
+    x: Math.round(state.player.x + (x - OFF_X) / SCALE),
+    y: Math.round(state.player.y + (OFF_Y - y) / SCALE)
+  }
+}
+
+function logicToPx({x, y}) {
+  return {
+    x: SCALE * (x - state.player.x) + OFF_X,
+    y: SCALE * (state.player.y - y) + OFF_Y
   }
 }
 
@@ -167,7 +196,7 @@ function initWorld(){
     .receive("ok", (msg) => { state.coins = msg.coins })
 }
 
-function checkCollisions(){
+function checkCoinCollisions(){
   let collidedCoin = state.coins.find(coin => coin.x === state.player.x && coin.y === state.player.y);
 
   if (collidedCoin) {
@@ -179,16 +208,16 @@ function checkCollisions(){
 document.addEventListener("keydown", (evt) => {
   if (evt.key.match("Arrow")) {
     moves[evt.key]();
-    checkCollisions();
   }
 });
 
 canvas.addEventListener("mouseup", (evt) => {
-  state.move.x = evt.pageX - canvas.offsetLeft;
-  state.move.y = evt.pageY - canvas.offsetTop;
+  let rect = canvas.getBoundingClientRect();
+  state.click = pxToLogic({x: evt.clientX - rect.left, y: evt.clientY - rect.top});
 });
 
 function gameLoop(){
+  physics(state);
   render(ctx, state);
   requestAnimationFrame(gameLoop);
 }
